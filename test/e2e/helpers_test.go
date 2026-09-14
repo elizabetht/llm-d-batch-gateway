@@ -716,6 +716,39 @@ func deleteE2ECurlPod(t *testing.T) {
 
 // ── Simulator control API helpers ────────────────────────────────────────
 
+type simStats struct {
+	RequestsReceived  int64 `json:"requests_received"`
+	RequestsCompleted int64 `json:"requests_completed"`
+	RequestsFailed    int64 `json:"requests_failed"`
+	RequestsAborted   int64 `json:"requests_aborted"`
+	Running           int64 `json:"running"`
+	Waiting           int64 `json:"waiting"`
+}
+
+func getSimStats(t *testing.T, simService string) simStats {
+	t.Helper()
+
+	ensureE2ECurlPod(t)
+
+	url := fmt.Sprintf("http://%s.%s.svc.cluster.local:%s/stats", simService, testNamespace, testSimControlPort)
+	out, err := exec.Command("kubectl", "exec",
+		"-n", testNamespace,
+		e2eCurlPod,
+		"--",
+		"curl", "-sS", "--fail", "--max-time", "10",
+		url,
+	).CombinedOutput()
+	if err != nil {
+		t.Fatalf("GET %s failed: %v\n%s", url, err, out)
+	}
+
+	var stats simStats
+	if err := json.Unmarshal(out, &stats); err != nil {
+		t.Fatalf("decode %s response: %v\n%s", url, err, out)
+	}
+	return stats
+}
+
 // tryPatchEngineConfig sends a PATCH to the vllm-vcr control API of the given
 // simulator service via a curl pod running in the cluster. body is a JSON
 // object of config fields (see the vllm-vcr "Runtime control API" docs); the
@@ -940,9 +973,11 @@ func startProcessorObsPortForward(t *testing.T) (*processorObsPortForward, error
 		select {
 		case line, ok := <-lineCh:
 			if !ok {
-				if err := <-scanDone; err != nil {
-					return nil, fmt.Errorf("read processor port-forward output: %w", err)
+				// Drain scanDone here so the defer cleanup doesn't block on it.
+				if scanErr := <-scanDone; scanErr != nil {
+					return nil, fmt.Errorf("read processor port-forward output: %w", scanErr)
 				}
+				scanDone = nil // prevent defer from reading it again
 				return nil, fmt.Errorf("processor port-forward exited before reporting a local port:\n%s", strings.Join(output, "\n"))
 			}
 			output = append(output, line)
@@ -981,11 +1016,19 @@ func (pf *processorObsPortForward) Close() {
 	if pf.reader != nil {
 		_ = pf.reader.Close()
 	}
+	// Use a timeout to prevent hanging if the subprocess doesn't exit cleanly.
+	closeTimeout := time.After(5 * time.Second)
 	if pf.waitDone != nil {
-		<-pf.waitDone
+		select {
+		case <-pf.waitDone:
+		case <-closeTimeout:
+		}
 	}
 	if pf.scanDone != nil {
-		<-pf.scanDone
+		select {
+		case <-pf.scanDone:
+		case <-closeTimeout:
+		}
 	}
 }
 
@@ -1027,6 +1070,21 @@ func waitForProcessorReady(t *testing.T, timeout time.Duration) {
 			pf.Close()
 		}
 	}()
+
+	// Wait for the processor pod to be Running and Ready before attempting
+	// a port-forward. This avoids the race where kubectl port-forward fails
+	// because the pod is still Pending after a delete/restart.
+	podLabel := fmt.Sprintf("app.kubernetes.io/instance=%s,app.kubernetes.io/component=processor", testHelmRelease)
+	waitCtx, waitCancel := context.WithDeadline(context.Background(), deadline)
+	defer waitCancel()
+	if out, err := exec.CommandContext(waitCtx, "kubectl", "wait", "pod",
+		"-l", podLabel,
+		"-n", testNamespace,
+		"--for=condition=Ready",
+		fmt.Sprintf("--timeout=%ds", int(time.Until(deadline).Seconds())),
+	).CombinedOutput(); err != nil {
+		t.Fatalf("processor pod not ready after %v: %v\n%s", timeout, err, out)
+	}
 
 	for {
 		if pf == nil {

@@ -997,10 +997,7 @@ func TestBatchHandler(t *testing.T) {
 					},
 				},
 			}
-			slo := time.Now().UTC().Add(24 * time.Hour)
-			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, map[string]string{
-				batch_types.TagSLO: fmt.Sprintf("%d", slo.UnixMicro()),
-			})
+			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, nil)
 			if err != nil {
 				t.Fatalf("Failed to convert batch to DB item: %v", err)
 			}
@@ -1106,10 +1103,7 @@ func TestBatchHandler(t *testing.T) {
 					Status: openai.BatchStatusInProgress,
 				},
 			}
-			slo := time.Now().UTC().Add(24 * time.Hour)
-			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, map[string]string{
-				batch_types.TagSLO: fmt.Sprintf("%d", slo.UnixMicro()),
-			})
+			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, nil)
 			if err != nil {
 				t.Fatalf("Failed to convert batch to DB item: %v", err)
 			}
@@ -1146,10 +1140,7 @@ func TestBatchHandler(t *testing.T) {
 					CancellingAt: &cancellingAt,
 				},
 			}
-			slo := time.Now().UTC().Add(24 * time.Hour)
-			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, map[string]string{
-				batch_types.TagSLO: fmt.Sprintf("%d", slo.UnixMicro()),
-			})
+			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, nil)
 			if err != nil {
 				t.Fatalf("Failed to convert batch to database item: %v", err)
 			}
@@ -1217,10 +1208,7 @@ func TestBatchHandler(t *testing.T) {
 					CancellingAt: &cancellingAt,
 				},
 			}
-			slo := time.Now().UTC().Add(24 * time.Hour)
-			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, map[string]string{
-				batch_types.TagSLO: fmt.Sprintf("%d", slo.UnixMicro()),
-			})
+			item, err := converter.BatchToDBItem(&batch, common.DefaultTenantID, nil)
 			if err != nil {
 				t.Fatalf("Failed to convert batch to database item: %v", err)
 			}
