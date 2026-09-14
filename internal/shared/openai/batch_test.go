@@ -62,7 +62,7 @@ func TestEndpointAllowlist(t *testing.T) {
 	})
 
 	t.Run("invalid paths", func(t *testing.T) {
-		for _, endpoint := range []string{"", "v1/classify", "//example.com/v1/classify", "/v1/classify?mode=test", "/v1/classify#fragment", "/v1/%63lassify"} {
+		for _, endpoint := range []string{"", "v1/classify", "//example.com/v1/classify", "/v1/classify?mode=test", "/v1/classify#fragment", "/v1/%63lassify", "/v1/allowed/../admin", "/v1/./classify"} {
 			if _, err := NewEndpointAllowlist([]string{endpoint}); err == nil {
 				t.Errorf("NewEndpointAllowlist(%q) expected error", endpoint)
 			}

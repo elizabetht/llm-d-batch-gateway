@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -98,6 +99,9 @@ func validateEndpointPath(endpoint string) error {
 	}
 	if strings.ContainsAny(endpoint, "?#") {
 		return errors.New("must not contain a query string or fragment")
+	}
+	if path.Clean(endpoint) != endpoint {
+		return errors.New("must be a canonical path without dot segments or repeated slashes")
 	}
 	parsed, err := url.ParseRequestURI(endpoint)
 	if err != nil {
