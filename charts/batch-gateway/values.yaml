@@ -7,6 +7,9 @@ global:
   # values override this default and can be used for a processor-first rollout:
   # first set processor.config.extraEndpoints, wait for the processor rollout,
   # then set this value, and finally reset the processor override to null.
+  # To remove an endpoint, disable API admission first and retain processor
+  # support until accepted batches finish. See "Removing endpoints and rolling
+  # back" in README.md for the staged removal procedure.
   extraEndpoints: []
 
   # Shared pod security context for all components.
