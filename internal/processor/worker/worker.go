@@ -104,7 +104,6 @@ func NewProcessor(
 		updater:           updater,
 		batchDB:           clients.BatchDB,
 		event:             clients.Event,
-		inflight:          clients.InFlight,
 		inference:         clients.Inference,
 		asyncInference:    clients.AsyncInference,
 		files:             newFileManager(clients.File, clients.FileDB),

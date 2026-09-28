@@ -150,7 +150,6 @@ func TestConfiguredEndpointReachesInferenceClientUnchanged(t *testing.T) {
 				Queue:     mockdb.NewMockBatchPriorityQueueClient(),
 				Status:    mockdb.NewMockBatchStatusClient(),
 				Event:     mockdb.NewMockBatchEventChannelClient(),
-				InFlight:  mockdb.NewMockInFlightClient(),
 				Inference: inference.NewSingleClientResolver(inferClient),
 			}
 			t.Cleanup(func() { _ = clients.Inference.Close() })
