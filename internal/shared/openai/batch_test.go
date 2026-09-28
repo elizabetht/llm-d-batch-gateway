@@ -47,11 +47,21 @@ func TestEndpointAllowlist(t *testing.T) {
 			t.Error("zero-value allowlist accepted an unconfigured extension")
 		}
 
-		allowlist, err := NewEndpointAllowlist([]string{"/v1/classify", "/v1/pooling", "/v1/classify", EndpointChatCompletions.String()})
+		allowlist, err := NewEndpointAllowlist([]string{
+			"/v1/classify", 
+			"/v1/pooling", 
+			"/v1/classify", 
+			"/v1/model.v2/classify",
+			EndpointChatCompletions.String()})
 		if err != nil {
 			t.Fatalf("NewEndpointAllowlist() unexpected error: %v", err)
 		}
-		for _, endpoint := range []string{EndpointChatCompletions.String(), "/v1/classify", "/v1/pooling"} {
+		for _, endpoint := range []string{
+			EndpointChatCompletions.String(), 
+			"/v1/classify", 
+			"/v1/pooling",
+			"/v1/model.v2/classify",
+			} {
 			if !allowlist.IsValid(endpoint) {
 				t.Errorf("configured allowlist rejected endpoint %q", endpoint)
 			}
@@ -62,7 +72,21 @@ func TestEndpointAllowlist(t *testing.T) {
 	})
 
 	t.Run("invalid paths", func(t *testing.T) {
-		for _, endpoint := range []string{"", "v1/classify", "//example.com/v1/classify", "/v1/classify?mode=test", "/v1/classify#fragment", "/v1/%63lassify", "/v1/allowed/../admin", "/v1/./classify"} {
+		for _, endpoint := range []string{
+			"", 
+			"v1/classify", 
+			"//example.com/v1/classify", 
+			"/v1/classify?mode=test", 
+			"/v1/classify#fragment", 
+			"/v1/%63lassify", "/v1/allowed/../admin", "/v1/./classify", 
+			"/v1/allowed/../admin",
+			"/v1/./classify",
+			"/v1/classify/.",
+			"/v1/classify/..",
+			"/../admin",
+			"/v1//classify",
+			"/v1/%2e%2e/admin",
+			} {
 			if _, err := NewEndpointAllowlist([]string{endpoint}); err == nil {
 				t.Errorf("NewEndpointAllowlist(%q) expected error", endpoint)
 			}

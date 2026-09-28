@@ -110,6 +110,9 @@ func validateEndpointPath(endpoint string) error {
 	if parsed.Path != endpoint || parsed.RawQuery != "" || parsed.Fragment != "" {
 		return errors.New("must not contain a query string, fragment, or escaped path")
 	}
+	if path.Clean(endpoint) != endpoint {
+		return errors.New("must be a canonical path without dot segments, repeated slashes, or a trailing slash")
+	}
 	return nil
 }
 
